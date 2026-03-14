@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScholarSync - Coding Contests</title>
+    <link rel="icon" type="image/png" href="scholarsync.png">
+    <script>
+        // Check if user is logged in
+        document.addEventListener('DOMContentLoaded', function () {
+            const currentUser = localStorage.getItem('currentUser');
+            if (!currentUser) {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            background-color: #f4f6f8;
+        }
+
+        .navbar {
+            display: flex;
+            background-color: rgb(45, 110, 185);
+            padding: 15px 40px;
+            align-items: center;
+        }
+
+        .logo-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .title {
+            color: white;
+            margin: 0;
+        }
+
+        .navbar ul {
+            list-style: none;
+            display: flex;
+            gap: 25px;
+            padding: 0;
+            margin: 0;
+            margin-left: auto;
+            align-items: center;
+        }
+
+        .navbar a {
+            text-decoration: none;
+            color: white;
+            font-weight: 500;
+        }
+
+        .profile {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .profile:hover {
+            transform: scale(1.1);
+        }
+
+        /* Profile Container Styles */
+        .profile-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h2 {
+            color: rgb(45, 110, 185);
+            margin-bottom: 20px;
+        }
+
+        input,
+        button,
+        textarea {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background-color: rgb(45, 110, 185);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: rgb(35, 90, 155);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .contest-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            text-align: left;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .contest-card h3 {
+            margin: 0 0 5px;
+            color: rgb(45, 110, 185);
+        }
+
+        .contest-card a {
+            color: rgb(45, 110, 185);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .contest-card a:hover {
+            text-decoration: underline;
+        }
+
+        .delete-btn {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            float: right;
+            font-size: 0.8em;
+            width: auto;
+        }
+
+        /* Removed Advanced Profile Dropdown Styles */
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="logo-title">
+            <img src="scholarsync.png" class="logo">
+            <h2 class="title">ScholarSync</h2>
+        </div>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="coding-contest.html">Coding Contests</a></li>
+            <li><a href="certifications.html">Certifications</a></li>
+            <li><a href="assignments.html">Assignments</a></li>
+            <li><a href="javascript:void(0)" id="navbar-logout">Logout</a></li>
+            <li>
+                <div class="profile-container">
+                    <a href="profile.html">
+                        <img src="profile1.png" class="profile" id="profile-icon" title="View Profile">
+                    </a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Contest Dashboard (Visible to Faculty only) -->
+    <div class="container hidden" id="dashboard-section">
+        <h2>Post a Coding Contest</h2>
+        <input type="text" id="contest-title" placeholder="Contest Title">
+        <input type="url" id="contest-link" placeholder="Contest URL">
+        <textarea id="contest-desc" rows="3" placeholder="Description (Optional)"></textarea>
+        <button onclick="addContest()">Post Contest</button>
+    </div>
+
+    <!-- Contest List (Shared View) -->
+    <div class="container hidden" id="contest-list-section">
+        <h2>Upcoming Contests</h2>
+        <div id="contest-container"></div>
+    </div>
+
+    <script>
+        let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        let currentRole = currentUser ? currentUser.role : '';
+        let currentStudentRoll = currentUser ? currentUser.id : '';
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const handleLogout = () => {
+                if (confirm('Are you sure you want to logout?')) {
+                    localStorage.removeItem('currentUser');
+                    window.location.href = 'login.html';
+                }
+            };
+            document.getElementById('navbar-logout').addEventListener('click', handleLogout);
+
+            if (currentRole === 'faculty') {
+                document.getElementById('dashboard-section').classList.remove('hidden');
+                document.getElementById('contest-list-section').classList.remove('hidden');
+            } else if (currentRole === 'student') {
+                document.getElementById('contest-list-section').classList.remove('hidden');
+            }
+            loadContests();
+        });
+
+        function addContest() {
+            const title = document.getElementById("contest-title").value;
+            const link = document.getElementById("contest-link").value;
+            const desc = document.getElementById("contest-desc").value;
+
+            if (!title || !link) {
+                alert("Please enter a title and a link.");
+                return;
+            }
+
+            const contest = { id: Date.now(), title, link, desc };
+            let contests = JSON.parse(localStorage.getItem("contests")) || [];
+            contests.push(contest);
+            localStorage.setItem("contests", JSON.stringify(contests));
+
+            document.getElementById("contest-title").value = "";
+            document.getElementById("contest-link").value = "";
+            document.getElementById("contest-desc").value = "";
+
+            loadContests();
+        }
+
+        function loadContests() {
+            const container = document.getElementById("contest-container");
+            container.innerHTML = "";
+            let contests = JSON.parse(localStorage.getItem("contests")) || [];
+
+            contests.forEach(contest => {
+                const div = document.createElement("div");
+                div.className = "contest-card";
+
+                const deleteBtn = currentRole === 'faculty' ? `<button class="delete-btn" onclick="deleteContest(${contest.id})">Delete</button>` : '';
+
+                // Make any link in the description clickable and display as 'Give Feedback'
+                let descHtml = contest.desc;
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                descHtml = descHtml.replace(urlRegex, function (url) {
+                    return `<a href="${url}" target="_blank" style="color: #2d6eb9; text-decoration: underline;">Give Feedback</a>`;
+                });
+
+                div.innerHTML = `
+                    ${deleteBtn}
+                    <h3>${contest.title}</h3>
+                    <p>${contest.desc}</p>
+                    <a href="${contest.link}" target="_blank" onclick="participateContest(${contest.id})">Visit Contest</a>
+                    <p>${descHtml}</p>
+                    <a href="${contest.link}" target="_blank">Visit Contest</a>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteContest(id) {
+            if (!confirm("Delete this contest?")) return;
+            let contests = JSON.parse(localStorage.getItem("contests")) || [];
+            contests = contests.filter(c => c.id !== id);
+            localStorage.setItem("contests", JSON.stringify(contests));
+            loadContests();
+        }
+
+        function participateContest(contestId) {
+            if (currentRole !== 'student') return;
+
+            let user = JSON.parse(localStorage.getItem('currentUser'));
+            if (!user.participatedContests) {
+                user.participatedContests = [];
+            }
+            if (!user.participatedContests.includes(contestId)) {
+                user.participatedContests.push(contestId);
+                user.contestsParticipated = (user.contestsParticipated || 0) + 1;
+
+                localStorage.setItem('currentUser', JSON.stringify(user));
+
+                let users = JSON.parse(localStorage.getItem('users')) || [];
+                let userIndex = users.findIndex(u => u.id === user.id && u.role === 'student');
+                if (userIndex !== -1) {
+                    users[userIndex].participatedContests = user.participatedContests;
+                    users[userIndex].contestsParticipated = user.contestsParticipated;
+                    localStorage.setItem('users', JSON.stringify(users));
+                }
+            }
+        }
+    </script>
+
+</body>
+
+</html>
