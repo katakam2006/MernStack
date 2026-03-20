@@ -7,10 +7,11 @@
     <title>ScholarSync</title>
     <link rel="icon" type="image/png" href="scholarsync.png">
     <script>
-        // Check if user is logged in
+        // Check if user is logged in via token
         document.addEventListener('DOMContentLoaded', function () {
+            const token = localStorage.getItem('token');
             const currentUser = localStorage.getItem('currentUser');
-            if (!currentUser) {
+            if (!token || !currentUser) {
                 window.location.href = 'login.html';
             }
         });
@@ -191,37 +192,36 @@
     </style>
 
     <script>
-        // Activity Tracking Logic
-        function updateActivityCounts() {
-            const user = JSON.parse(localStorage.getItem('currentUser'));
-            const assignments = JSON.parse(localStorage.getItem('assignments') || '[]');
-            const contests = JSON.parse(localStorage.getItem('contests') || '[]');
-            const certifications = JSON.parse(localStorage.getItem('certifications') || '[]');
+        // Activity Tracking Logic fetching from Node.js
+        async function updateActivityCounts() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
 
-            // Implicit filtering: Use student's semester and branch, or show all for faculty
-            let targetSemester = user.role === 'student' ? user.semester : null;
-            let targetBranch = user.role === 'student' ? user.branch : null;
+            try {
+                // Fetch assignments
+                const assignRes = await fetch('http://localhost:5000/api/assignments', {
+                    headers: { 'Authorization': token }
+                });
+                const assignments = await assignRes.json();
+                
+                // Fetch contests
+                const contestRes = await fetch('http://localhost:5000/api/contests', {
+                    headers: { 'Authorization': token }
+                });
+                const contests = await contestRes.json();
 
-            const filteredAssignments = assignments.filter(a => {
-                if (targetSemester) {
-                    const matchesSemester = a.semester === targetSemester;
-                    const matchesBranch = !a.branch || a.branch === 'ALL' || a.branch === targetBranch;
-                    return matchesSemester && matchesBranch;
-                }
-                return true;
-            });
-            const filteredCerts = certifications.filter(c => {
-                if (targetSemester) {
-                    const matchesSemester = c.semester === targetSemester;
-                    const matchesBranch = !c.branch || c.branch === 'ALL' || c.branch === targetBranch;
-                    return matchesSemester && matchesBranch;
-                }
-                return true;
-            });
+                // Fetch certifications
+                const certRes = await fetch('http://localhost:5000/api/certifications', {
+                    headers: { 'Authorization': token }
+                });
+                const certifications = await certRes.json();
 
-            document.getElementById('assignment-count').innerText = `${filteredAssignments.length} Assignments`;
-            document.getElementById('contest-count').innerText = `${contests.length} Coding Contests`;
-            document.getElementById('cert-count').innerText = `${filteredCerts.length} Certifications`;
+                document.getElementById('assignment-count').innerText = `${assignments.length || 0} Assignments`;
+                document.getElementById('contest-count').innerText = `${contests.length || 0} Coding Contests`;
+                document.getElementById('cert-count').innerText = `${certifications.length || 0} Certifications`;
+            } catch (error) {
+                console.error('Failed to fetch data from backend:', error);
+            }
         }
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -233,6 +233,7 @@
         document.getElementById('logout-btn').addEventListener('click', function () {
             if (confirm('Are you sure you want to logout?')) {
                 localStorage.removeItem('currentUser');
+                localStorage.removeItem('token');
                 window.location.href = 'login.html';
             }
         });

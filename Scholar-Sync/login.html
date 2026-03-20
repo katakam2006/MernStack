@@ -350,44 +350,62 @@
         document.getElementById('forgot-student-pass').addEventListener('click', () => handleForgotPassword('student'));
         document.getElementById('forgot-faculty-pass').addEventListener('click', () => handleForgotPassword('faculty'));
 
-        // Simple authentication logic using localStorage
-        document.getElementById('student-login-form').addEventListener('submit', function (e) {
+        // Simple authentication logic using localStorage replaced with Node.js fetch
+        document.getElementById('student-login-form').addEventListener('submit', async function (e) {
             e.preventDefault();
             const id = document.getElementById('student-id').value;
             const password = document.getElementById('student-password').value;
             const semester = document.getElementById('student-semester').value;
             const branch = document.getElementById('student-branch').value;
 
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            const user = users.find(u => u.id === id && u.password === password && u.role === 'student');
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, password, role: 'student' })
+                });
 
-            if (user) {
-                // Update user semester and branch in storage and current session
-                user.semester = semester;
-                user.branch = branch;
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                window.location.href = 'index.html';
-            } else {
-                alert('Invalid Student credentials! If you forgot your password, click "Forgot Student Password?" below.');
+                const data = await response.json();
+                if (response.ok) {
+                    // Save Token and current user details
+                    data.user.semester = semester;
+                    data.user.branch = branch;
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Invalid Student credentials! ' + data.message);
+                }
+            } catch (error) {
+                alert('Failed to connect to the server.');
             }
         });
 
-        document.getElementById('faculty-login-form').addEventListener('submit', function (e) {
+        document.getElementById('faculty-login-form').addEventListener('submit', async function (e) {
             e.preventDefault();
             const id = document.getElementById('faculty-id').value;
             const password = document.getElementById('faculty-password').value;
             const branch = document.getElementById('faculty-branch').value;
 
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            const user = users.find(u => u.id === id && u.password === password && u.role === 'faculty');
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, password, role: 'faculty' })
+                });
 
-            if (user) {
-                // Update branch if specified
-                user.branch = branch;
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                window.location.href = 'index.html';
-            } else {
-                alert('Invalid Faculty credentials! If you forgot your password, click "Forgot Faculty Password?" below.');
+                const data = await response.json();
+                if (response.ok) {
+                    // Update branch if specified
+                    data.user.branch = branch;
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Invalid Faculty credentials! ' + data.message);
+                }
+            } catch (error) {
+                alert('Failed to connect to the server.');
             }
         });
 

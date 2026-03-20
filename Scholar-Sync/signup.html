@@ -371,7 +371,7 @@
         }
 
         // Student Signup Script
-        document.getElementById('student-signup-form').addEventListener('submit', function (e) {
+        document.getElementById('student-signup-form').addEventListener('submit', async function (e) {
             e.preventDefault();
             const id = document.getElementById('student-roll').value;
             const email = document.getElementById('student-email').value;
@@ -390,20 +390,27 @@
                 return;
             }
 
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            if (users.find(u => u.id === id)) {
-                alert('User with this Roll Number already exists!');
-                return;
-            }
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, email, password, role: 'student', semester, branch })
+                });
 
-            users.push({ id, email, semester, branch, password, role: 'student' });
-            localStorage.setItem('users', JSON.stringify(users));
-            alert('Student account created successfully! Please login.');
-            window.location.href = 'login.html';
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Student account created successfully! Please login.');
+                    window.location.href = 'login.html';
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert('Failed to connect to the server.');
+            }
         });
 
         // Faculty Signup Script
-        document.getElementById('faculty-signup-form').addEventListener('submit', function (e) {
+        document.getElementById('faculty-signup-form').addEventListener('submit', async function (e) {
             e.preventDefault();
             const id = document.getElementById('faculty-id').value;
             const email = document.getElementById('faculty-email').value;
@@ -421,16 +428,23 @@
                 return;
             }
 
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            if (users.find(u => u.id === id)) {
-                alert('User with this Faculty ID already exists!');
-                return;
-            }
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, email, password, role: 'faculty', branch })
+                });
 
-            users.push({ id, email, branch, password, role: 'faculty' });
-            localStorage.setItem('users', JSON.stringify(users));
-            alert('Faculty account created successfully! Please login.');
-            window.location.href = 'login.html';
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Faculty account created successfully! Please login.');
+                    window.location.href = 'login.html';
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert('Failed to connect to the server.');
+            }
         });
 
         // Password Toggle Logic
